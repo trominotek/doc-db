@@ -1,1 +1,62 @@
-00_afh_full.pdf
+# Database files
+*.sqlite3
+*.db
+*.sqlite
+chroma.sqlite3
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+temp_*/
+test_*/
+processed_data/
+
+# Large PDF files
+*.pdf
+pdfs/
+
+# Docker volumes data
+06553ac7-39d4-45f0-9215-b5896e752068/
+44f8ead9-df0b-453d-83db-ece36bdeb306/
+*-*-*-*-*/
+
+# Log files
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+pip-log.txt
+pip-delete-this-directory.txt
