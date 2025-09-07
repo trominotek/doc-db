@@ -18,9 +18,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY advanced_rag_service.py .
+COPY robust_pdf_processor.py .
 COPY simple_pdf_uploader.py .
 COPY PDF_UPLOADER_README.md .
 COPY example_usage.py .
+
+# Create directories
+RUN mkdir -p /app/pdfs /app/processed_data /app/processed_data/extracted /app/processed_data/sections /app/processed_data/chunks
 
 # Create ChromaDB data directory
 RUN mkdir -p /app/chromadb_data

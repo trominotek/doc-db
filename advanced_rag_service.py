@@ -29,7 +29,7 @@ CORS(app,
      supports_credentials=True)
 
 # Initialize ChromaDB client with configurable path
-CHROMADB_PATH = os.getenv('CHROMADB_PATH', "/Users/tojojose/trominos/doc-db")
+CHROMADB_PATH = os.getenv('CHROMADB_PATH', "/Users/tojojose/trominos/rag-quiz/db/chroma")
 chroma_client = chromadb.PersistentClient(path=CHROMADB_PATH)
 
 # No embedding model - using ChromaDB's built-in search
@@ -778,6 +778,134 @@ def list_collections():
         })
     except Exception as e:
         return jsonify({"error": f"Error listing collections: {str(e)}"}), 500
+
+# Admin endpoints for PDF processing
+@app.route('/admin/pdf/list', methods=['GET'])
+def admin_list_pdfs():
+    """List all PDF files in the pdfs folder"""
+    try:
+        from robust_pdf_processor import RobustPDFProcessor
+        processor = RobustPDFProcessor(chroma_client)
+        pdf_files = processor.get_pdf_files()
+        
+        return jsonify({
+            "success": True,
+            "pdf_files": [
+                {
+                    "name": f.name,
+                    "path": str(f),
+                    "size": f.stat().st_size,
+                    "modified": datetime.fromtimestamp(f.stat().st_mtime).isoformat()
+                } for f in pdf_files
+            ],
+            "total_files": len(pdf_files)
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Error listing PDF files: {str(e)}"
+        }), 500
+
+@app.route('/admin/pdf/process', methods=['POST'])
+def admin_process_pdfs():
+    """Process all PDF files in the pdfs folder"""
+    try:
+        from robust_pdf_processor import RobustPDFProcessor
+        processor = RobustPDFProcessor(chroma_client)
+        
+        # Get reset parameter from request
+        reset_collection = request.json.get('reset_collection', True) if request.is_json else True
+        
+        result = processor.process_all_pdfs(reset_collection=reset_collection)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Error processing PDFs: {str(e)}"
+        }), 500
+
+@app.route('/admin/pdf/status', methods=['GET'])
+def admin_processing_status():
+    """Get current PDF processing status"""
+    try:
+        from robust_pdf_processor import RobustPDFProcessor
+        processor = RobustPDFProcessor(chroma_client)
+        
+        status = processor.get_processing_status()
+        stats = processor.get_collection_stats()
+        
+        return jsonify({
+            "success": True,
+            "processing_status": status,
+            "collection_stats": stats
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Error getting status: {str(e)}"
+        }), 500
+
+@app.route('/admin/collection/stats', methods=['GET'])
+def admin_collection_stats():
+    """Get detailed collection statistics"""
+    try:
+        print(f"DEBUG: CHROMADB_PATH = {CHROMADB_PATH}")
+        from robust_pdf_processor import RobustPDFProcessor
+        processor = RobustPDFProcessor(chroma_client)
+        
+        stats = processor.get_collection_stats()
+        print(f"DEBUG: stats = {stats}")
+        
+        return jsonify({
+            "success": True,
+            "stats": stats
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Error getting collection stats: {str(e)}"
+        }), 500
+
+@app.route('/admin/collection/reset', methods=['POST'])
+def admin_reset_collection():
+    """Reset/clear the ChromaDB collection"""
+    try:
+        collection_name = "rag_documents"
+        
+        # Delete existing collection
+        try:
+            chroma_client.delete_collection(collection_name)
+            print(f"Deleted collection: {collection_name}")
+        except:
+            pass  # Collection might not exist
+        
+        # Create new empty collection
+        embedding_function = chromadb.utils.embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+        
+        collection = chroma_client.create_collection(
+            name=collection_name,
+            embedding_function=embedding_function,
+            metadata={"description": "RAG document chunks with embeddings"}
+        )
+        
+        return jsonify({
+            "success": True,
+            "message": f"Collection '{collection_name}' has been reset",
+            "collection_name": collection_name
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Error resetting collection: {str(e)}"
+        }), 500
 
 if __name__ == '__main__':
     print("🚀 Starting Query-Only RAG Service for Doc-DB...")
