@@ -60,3 +60,9 @@ logs/
 node_modules/
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Large binary files
+*.so
+*.dylib
+*.dll
+*.exe
